@@ -1,3 +1,7 @@
+const { PubSub, withFilter } = require('graphql-subscriptions');
+
+const pubsub = new PubSub();
+
 const resolvers = {
   Query: {
     // returns an array of Tracks that will be used to populate the homepage grid of our web client
@@ -15,11 +19,19 @@ const resolvers = {
       return dataSources.trackAPI.getModule(id);
     },
   },
+
   Mutation: {
     // increments a track's numberOfViews property
     incrementTrackViews: async (_, { id }, { dataSources }) => {
       try {
         const track = await dataSources.trackAPI.incrementTrackViews(id);
+        const obj = {
+          trackViewsUpdated: {
+            id: track.id,
+            numberOfViews: track.numberOfViews,
+          },
+        };
+        await pubsub.publish('TRACK_UPDATED', obj);
         return {
           code: 200,
           success: true,
@@ -36,6 +48,18 @@ const resolvers = {
       }
     },
   },
+
+  Subscription: {
+    trackViewsUpdated: {
+      subscribe: withFilter(
+        () => pubsub.asyncIterator(['TRACK_UPDATED']),
+        (payload, variables) => {
+          return payload.trackViewsUpdated.id === variables.id;
+        }
+      ),
+    },
+  },
+
   Track: {
     author: ({ authorId }, _, { dataSources }) => {
       return dataSources.trackAPI.getAuthor(authorId);

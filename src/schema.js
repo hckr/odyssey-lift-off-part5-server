@@ -1,4 +1,4 @@
-const { gql } = require('apollo-server');
+const { gql } = require('apollo-server-express');
 
 const typeDefs = gql`
   type Query {
@@ -13,6 +13,15 @@ const typeDefs = gql`
   type Mutation {
     "Increment the number of views of a given track, when the track card is clicked"
     incrementTrackViews(id: ID!): IncrementTrackViewsResponse!
+  }
+
+  type Subscription {
+    trackViewsUpdated(id: ID!): TrackViewsUpdatedResponse
+  }
+
+  type TrackViewsUpdatedResponse {
+    id: ID!
+    numberOfViews: Int
   }
 
   type IncrementTrackViewsResponse {
