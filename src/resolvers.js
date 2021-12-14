@@ -1,6 +1,7 @@
-const { PubSub, withFilter } = require('graphql-subscriptions');
+const { RedisPubSub } = require('graphql-redis-subscriptions');
+const { withFilter } = require('graphql-subscriptions');
 
-const pubsub = new PubSub();
+const pubsub = new RedisPubSub({ connection: process.env.REDIS_URL });
 
 const resolvers = {
   Query: {
@@ -25,13 +26,12 @@ const resolvers = {
     incrementTrackViews: async (_, { id }, { dataSources }) => {
       try {
         const track = await dataSources.trackAPI.incrementTrackViews(id);
-        const obj = {
+        await pubsub.publish('TRACK_VIEWS_UPDATED', {
           trackViewsUpdated: {
             id: track.id,
             numberOfViews: track.numberOfViews,
           },
-        };
-        await pubsub.publish('TRACK_UPDATED', obj);
+        });
         return {
           code: 200,
           success: true,
@@ -52,7 +52,7 @@ const resolvers = {
   Subscription: {
     trackViewsUpdated: {
       subscribe: withFilter(
-        () => pubsub.asyncIterator(['TRACK_UPDATED']),
+        () => pubsub.asyncIterator(['TRACK_VIEWS_UPDATED']),
         (payload, variables) => {
           return payload.trackViewsUpdated.id === variables.id;
         }
