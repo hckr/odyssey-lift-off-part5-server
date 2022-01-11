@@ -8,6 +8,8 @@ const resolvers =  require("./resolvers");
 const typeDefs =  require("./schema");
 const TrackAPI = require('./datasources/track-api');
 
+require('dotenv').config();
+
 (async function () {
   const app = express();
 
@@ -30,15 +32,17 @@ const TrackAPI = require('./datasources/track-api');
         trackAPI: new TrackAPI(),
       };
     },
-    plugins: [{
-      async serverWillStart() {
-        return {
-          async drainServer() {
-            subscriptionServer.close();
-          }
-        };
-      }
-    }],
+    plugins: [
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              subscriptionServer.close();
+            },
+          };
+        },
+      },
+    ],
   });
   await server.start();
   server.applyMiddleware({ app });
